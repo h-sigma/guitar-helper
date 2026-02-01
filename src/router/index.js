@@ -18,13 +18,13 @@ const router = createRouter({
 			component: TunerTool
 		},
 		{
-			path: '/chord-practice',
-			name: 'chord-practice',
+			path: '/chords',
+			name: 'chords',
 			component: ChordTool
 		},
 		{
-			path: '/strumming-practice',
-			name: 'strumming-practice',
+			path: '/strum',
+			name: 'strum',
 			component: StrummingTool
 		}
 	]

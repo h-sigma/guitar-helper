@@ -10,35 +10,64 @@ export const STANDARD_TUNING = [
 	{ note: 'E4', freq: 329.63 }
 ]
 
+// Note names for manual conversion
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+/**
+ * Convert frequency to MIDI note number
+ * @param {number} frequency 
+ * @returns {number} MIDI note number
+ */
+function frequencyToMidi(frequency) {
+	// MIDI note 69 = A4 = 440Hz
+	// n = 12 * log2(f / 440) + 69
+	return Math.round(12 * Math.log2(frequency / 440) + 69)
+}
+
+/**
+ * Convert MIDI note number to note name with octave
+ * @param {number} midi 
+ * @returns {string} Note name like "A4"
+ */
+function midiToNoteName(midi) {
+	const octave = Math.floor(midi / 12) - 1
+	const noteIndex = midi % 12
+	return NOTE_NAMES[noteIndex] + octave
+}
+
 /**
  * Gets the nearest musical note for a given frequency.
+ * Uses manual MIDI calculation as primary method (more reliable than Tonal.fromFreq)
  * @param {number} frequency - Output from pitch detector
  */
 export function getNoteFromFrequency(frequency) {
-	if (!frequency) return null
+	if (!frequency || frequency < 20 || frequency > 5000) return null
 
-	// Tonal.Note.fromFreq(frequency) returns the note name (e.g., "A4")
-	// Note: Tonal might return "A4" for 440.
-	const noteName = Note.fromFreq(frequency)
-	const midi = Note.midi(noteName)
-	const idealFreq = Note.freq(noteName)
+	try {
+		// Manual calculation (more reliable)
+		const midi = frequencyToMidi(frequency)
+		const noteName = midiToNoteName(midi)
 
-	// Calculate cents off
-	// Formula: 1200 * log2(f1 / f0)
-	const cents = 1200 * Math.log2(frequency / idealFreq)
+		// Calculate ideal frequency for this MIDI note
+		const idealFreq = 440 * Math.pow(2, (midi - 69) / 12)
 
-	return {
-		name: noteName, // 'A4'
-		midi: midi,
-		freq: idealFreq,
-		diff: cents // Difference in cents
+		// Calculate cents off
+		const cents = 1200 * Math.log2(frequency / idealFreq)
+
+		return {
+			name: noteName,
+			midi: midi,
+			freq: idealFreq,
+			diff: cents
+		}
+	} catch (e) {
+		console.warn('getNoteFromFrequency error:', e)
+		return null
 	}
 }
 
 /**
  * Finds the closest string in the current tuning to the detected note.
- * Use this to guide the UI (e.g. highlight the E string if we are close to E).
- * This usually matches based on frequency proximity.
  */
 export function getClosestString(frequency, tuning = STANDARD_TUNING) {
 	if (!frequency) return null
