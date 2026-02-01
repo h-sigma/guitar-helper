@@ -19,12 +19,12 @@
     <!-- Mini fretboard preview -->
     <div
       v-if="chord.display?.frets"
-      class="flex gap-1 mt-2 mx-2"
+      class="flex gap-0.5 mt-2 mx-1"
     >
       <div 
         v-for="(fret, i) in chord.display.frets" 
         :key="i"
-        class="w-4 h-4 flex items-center justify-center text-[0.6rem] font-semibold rounded-full"
+        class="w-3 h-3 flex items-center justify-center text-[0.5rem] font-semibold rounded-full"
         :class="{ 
           'text-text-dim': fret === -1, 
           'text-accent': fret === 0,

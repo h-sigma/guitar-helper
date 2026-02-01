@@ -16,7 +16,7 @@ interface SustainedNoteReturn {
  * Can also run in "any note" mode for tuner (no target filtering).
  */
 export function useSustainedNote(options: SustainedNoteOptions = {}): SustainedNoteReturn {
-  const confirmDuration = options.confirmDuration ?? 500
+  const confirmDuration = options.confirmDuration ?? 250
   const maxGap = options.maxGap ?? 200
   const cooldownMs = options.cooldownMs ?? 300
 

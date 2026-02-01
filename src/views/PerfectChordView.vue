@@ -76,35 +76,6 @@
           </div>
         </section>
 
-        <!-- Detection Mode -->
-        <section>
-          <h2 class="text-lg font-semibold mb-4">Detection Mode</h2>
-          <div class="grid grid-cols-2 gap-4">
-            <button 
-              class="flex flex-col items-center p-6 rounded-xl border-2 transition-all"
-              :class="detectionMode === 'note' 
-                ? 'border-accent bg-accent-light' 
-                : 'border-border bg-surface hover:border-primary'"
-              @click="detectionMode = 'note'"
-            >
-              <span class="text-3xl mb-2">🎵</span>
-              <span class="font-semibold">Note by Note</span>
-              <span class="text-xs text-text-dim mt-1">Play each note individually</span>
-            </button>
-            <button 
-              class="flex flex-col items-center p-6 rounded-xl border-2 transition-all"
-              :class="detectionMode === 'chord' 
-                ? 'border-accent bg-accent-light' 
-                : 'border-border bg-surface hover:border-primary'"
-              @click="detectionMode = 'chord'"
-            >
-              <span class="text-3xl mb-2">🎸</span>
-              <span class="font-semibold">Full Chord</span>
-              <span class="text-xs text-text-dim mt-1">Strum the whole chord</span>
-            </button>
-          </div>
-        </section>
-
         <div class="flex justify-center pt-4">
           <button 
             class="btn-accent text-lg py-4 px-8 rounded-xl" 
@@ -153,9 +124,8 @@
             :detected-string-index="detectedStringIndex"
           />
 
-          <!-- Note Progress (note-by-note mode) -->
+          <!-- Note Progress -->
           <div
-            v-if="detectionMode === 'note'"
             class="flex justify-center gap-2 mt-4"
           >
             <div 
@@ -171,28 +141,14 @@
               {{ Note.pitchClass(note) }}
             </div>
           </div>
-
-          <!-- Chord Progress (chord mode) -->
-          <div
-            v-if="detectionMode === 'chord'"
-            class="mt-4 text-center"
-          >
-            <p class="text-text-dim mb-2">Strum all notes ({{ chordDetector.playedNotes.value.size }}/{{ session.activeChord.value?.notes?.length || 0 }})</p>
-            <div class="h-2 bg-border rounded-full overflow-hidden max-w-xs mx-auto">
-              <div 
-                class="h-full bg-accent transition-all duration-200"
-                :style="{ width: `${chordDetector.progress.value * 100}%` }"
-              />
-            </div>
-          </div>
         </div>
 
         <!-- Detection Display -->
         <NoteDetectionDisplay
           :detected-note="detectedNoteName"
-          :target-note="detectionMode === 'note' ? targetPitchClass : null"
+          :target-note="targetPitchClass"
           :frequency="detectedFreq"
-          :progress="detectionMode === 'note' ? leaderProgress : chordDetector.progress.value"
+          :progress="leaderProgress"
         />
 
         <!-- Stop Button -->
@@ -216,7 +172,6 @@ import { Note } from '@tonaljs/tonal'
 // Composables
 import { usePitchDetector } from '../composables/usePitchDetector'
 import { useSustainedNote } from '../composables/useSustainedNote'
-import { useChordDetector } from '../composables/useChordDetector'
 import { usePracticeSession } from '../composables/usePracticeSession'
 import { usePracticeTimer } from '../composables/usePracticeTimer'
 
@@ -237,7 +192,6 @@ const router = useRouter()
 const timerEnabled = ref(false)
 const timerMode = ref('countdown')
 const timerMinutes = ref(5)
-const detectionMode = ref('note') // 'note' or 'chord'
 const isPracticing = ref(false)
 
 // Session Management
@@ -251,7 +205,7 @@ const { pitch, start, stop } = usePitchDetector()
 const detectedNoteName = ref(null)
 const detectedFreq = ref(null)
 
-// Note-by-Note Detection (for 'note' mode)
+// Note-by-Note Detection
 const { 
   confirmedNote, 
   currentLeader, 
@@ -260,15 +214,9 @@ const {
   reset: resetSustained, 
   stop: stopSustained 
 } = useSustainedNote({
-  confirmDuration: 500,
+  confirmDuration: 250,
   maxGap: 200,
   cooldownMs: 300
-})
-
-// Chord Detection (for 'chord' mode)
-const chordDetector = useChordDetector({ 
-  mode: 'simultaneous',
-  simultaneousWindow: 400 // 400ms window for strumming
 })
 
 // Computed
@@ -277,13 +225,8 @@ const targetPitchClass = computed(() => {
   return Note.pitchClass(session.targetNote.value)
 })
 
-const chordNotes = computed(() => {
-  if (!session.activeChord.value) return []
-  return session.activeChord.value.notes.map(n => Note.pitchClass(n))
-})
-
 const activeStringIndex = computed(() => {
-  if (!session.activeChord.value || detectionMode.value === 'chord') return -1
+  if (!session.activeChord.value) return -1
   const frets = session.activeChord.value.display?.frets || []
   
   let noteIdx = 0
@@ -312,27 +255,10 @@ const detectedStringIndex = computed(() => {
   return -1
 })
 
-// Update chord detector target when chord changes
-watch(() => session.activeChord.value, (chord) => {
-  if (chord && detectionMode.value === 'chord') {
-    const notes = chord.notes.map(n => Note.pitchClass(n))
-    // Get unique notes
-    const uniqueNotes = [...new Set(notes)]
-    chordDetector.setTarget(uniqueNotes)
-  }
-}, { immediate: true })
-
 // Start Practice
 const startPractice = async () => {
   isPracticing.value = true
   session.resetProgress()
-  
-  // Set chord detector target if in chord mode
-  if (detectionMode.value === 'chord' && session.activeChord.value) {
-    const notes = session.activeChord.value.notes.map(n => Note.pitchClass(n))
-    chordDetector.setTarget([...new Set(notes)])
-  }
-  
   await start()
   
   if (timerEnabled.value) {
@@ -350,10 +276,9 @@ const stopPractice = () => {
   stop()
   timer.pause()
   resetSustained()
-  chordDetector.reset()
 }
 
-// Watch pitch and feed to appropriate detector
+// Watch pitch and feed to detector
 watch(pitch, (newFreq) => {
   if (!isPracticing.value) return
   
@@ -365,41 +290,20 @@ watch(pitch, (newFreq) => {
       const noteName = Note.pitchClass(detected.name)
       detectedNoteName.value = noteName
       
-      if (detectionMode.value === 'note') {
-        // Note-by-note mode: use sustained note detector
-        onNoteDetection(noteName, targetPitchClass.value)
-      } else {
-        // Chord mode: use chord detector
-        const result = chordDetector.onNoteDetected(noteName)
-        if (result.isComplete) {
-          // Chord complete! Advance to next
-          session.completeChord()
-          chordDetector.resetPlayed()
-          
-          // Set target for next chord
-          if (session.activeChord.value) {
-            const notes = session.activeChord.value.notes.map(n => Note.pitchClass(n))
-            chordDetector.setTarget([...new Set(notes)])
-          }
-        }
-      }
+      // Note-by-note mode
+      onNoteDetection(noteName, targetPitchClass.value)
     } else {
       detectedNoteName.value = null
-      if (detectionMode.value === 'note') {
-        onNoteDetection(null, targetPitchClass.value)
-      }
+      onNoteDetection(null, targetPitchClass.value)
     }
   } else {
     detectedNoteName.value = null
-    if (detectionMode.value === 'note') {
-      onNoteDetection(null, targetPitchClass.value)
-    }
+    onNoteDetection(null, targetPitchClass.value)
   }
 })
 
-// Watch for confirmed notes (note-by-note mode only)
+// Watch for confirmed notes
 watch(confirmedNote, (note) => {
-  if (detectionMode.value !== 'note') return
   if (!note || !targetPitchClass.value) return
 
   if (note === targetPitchClass.value) {
