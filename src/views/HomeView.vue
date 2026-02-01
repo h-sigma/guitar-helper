@@ -8,21 +8,21 @@ const tools = [
   { 
     id: 'tuner', 
     name: 'Tuner', 
-    desc: 'Simple, accurate tuning.', 
+    desc: 'Tune to standard, drop D, and more.', 
     path: '/tuner', 
     icon: Music 
   },
   { 
     id: 'chords', 
-    name: 'Chords', 
-    desc: 'Interactive fretboard diagrams.', 
+    name: 'Perfect Chord Practice', 
+    desc: 'Master chord transitions with precision.', 
     path: '/chords', 
     icon: Zap 
   },
   { 
     id: 'strum', 
-    name: 'Rhythm', 
-    desc: 'Metronome & patterns.', 
+    name: 'Strumming Practice', 
+    desc: 'Learn rhythm patterns with visual guides.', 
     path: '/strum', 
     icon: BarChart 
   }
@@ -30,25 +30,29 @@ const tools = [
 </script>
 
 <template>
-  <main class="home-container">
-    <header class="home-header">
-      <h1>Guitar Helper</h1>
-      <p>Mindful practice tools.</p>
+  <main class="min-h-screen p-8 max-w-xl mx-auto flex flex-col justify-center">
+    <header class="text-center mb-12">
+      <h1 class="text-4xl text-text mb-2">Guitar Helper</h1>
+      <p class="text-text-dim">Mindful practice tools for guitarists.</p>
     </header>
     
-    <div class="card-grid">
+    <div class="flex flex-col gap-6">
       <div 
         v-for="tool in tools" 
         :key="tool.id"
-        class="tool-card card"
+        class="card flex items-center gap-6 cursor-pointer hover:-translate-y-1 hover:shadow-md"
         @click="router.push(tool.path)"
       >
-        <div class="icon-circle">
-          <component :is="tool.icon" size="24" stroke-width="2" />
+        <div class="w-14 h-14 rounded-full bg-accent-light text-accent flex items-center justify-center shrink-0">
+          <component
+            :is="tool.icon"
+            :size="24"
+            :stroke-width="2"
+          />
         </div>
         <div>
-          <h2>{{ tool.name }}</h2>
-          <p>{{ tool.desc }}</p>
+          <h2 class="text-xl mb-1">{{ tool.name }}</h2>
+          <p class="text-text-dim text-sm">{{ tool.desc }}</p>
         </div>
       </div>
     </div>
@@ -56,57 +60,5 @@ const tools = [
 </template>
 
 <style scoped>
-.home-container {
-  min-height: 100vh;
-  padding: 2rem;
-  max-width: var(--max-width);
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.home-header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-.home-header h1 {
-  font-size: 2.5rem;
-  color: var(--text-color);
-  margin-bottom: 0.5rem;
-}
-.home-header p {
-  color: var(--text-dim);
-}
-
-.card-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.tool-card {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  cursor: pointer;
-}
-.tool-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
-}
-
-.icon-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #f1f3f5;
-  color: var(--text-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-h2 { font-size: 1.25rem; margin-bottom: 0.25rem; }
-p { margin: 0; color: var(--text-dim); font-size: 0.95rem; }
+/* No custom styles needed */
 </style>

@@ -75,7 +75,11 @@ watch(analyser, (newVal) => {
 
 <template>
   <div class="visualizer-wrapper">
-    <canvas ref="canvasRef" width="800" height="200"></canvas>
+    <canvas
+      ref="canvasRef"
+      width="800"
+      height="200"
+    />
   </div>
 </template>
 
